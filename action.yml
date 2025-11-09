@@ -1,0 +1,30 @@
+name: "Install Ruby from .ruby-version (self-hosted)"
+description: "Installs Ruby into $HOME/.rubies using ruby-build, then adds it to PATH"
+runs:
+  using: "composite"
+  steps:
+    - name: Install Ruby with ruby-build
+      shell: bash
+      run: |
+        set -eux
+
+        RUBY_VERSION="$(cat .ruby-version)"
+        ROOT="${HOME}/.rubies"
+        DIR="${ROOT}/${RUBY_VERSION}"
+
+        if [ ! -x "${DIR}/bin/ruby" ]; then
+          # install build deps if missing
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            build-essential libssl-dev libreadline-dev zlib1g-dev \
+            libyaml-dev libffi-dev git
+
+          git clone --depth=1 https://github.com/rbenv/ruby-build.git /tmp/ruby-build
+
+          mkdir -p "${DIR}"
+          /tmp/ruby-build/bin/ruby-build "${RUBY_VERSION}" "${DIR}"
+        fi
+
+        echo "${DIR}/bin" >> "$GITHUB_PATH"
+        ruby -v
+        gem install bundler
